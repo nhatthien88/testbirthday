@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Intro → Galaxy</title>
+  <style>
+    html,body{
+      margin:0; height:100%;
+      background:#000; color:#fff;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial;
+      overflow:hidden;
+      /* Tăng độ nét font (tuỳ trình duyệt) */
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    #overlay{
+      position:fixed; inset:0;
+      display:grid; place-items:center;
+      background:#000;
+    }
+
+    /* Đếm ngược ở chính giữa, nổi trên tất cả */
+    #count{
+      position:absolute;
+      top:50%; left:50%; transform:translate(-50%, -50%);
+      font-size:clamp(64px, 12vw, 220px);
+      color:#ffc0cb;
+      /* bỏ hiệu ứng bóng nếu bạn sợ nhìn mờ, để nguyên nếu thích */
+      /* text-shadow:0 0 20px hotpink; */
+      user-select:none;
+      z-index: 3; /* >>> cao hơn mưa chữ & tim bay */
+    }
+
+    /* Dòng chúc ở chính giữa, nổi trên tất cả */
+    #wish{
+      position:absolute;
+      top:50%; left:50%; transform:translate(-50%, -50%);
+      font-size:clamp(26px, 4vw, 52px);
+      color:#00ffff;
+      animation:glow 1.5s infinite alternate;
+      text-align:center;
+      display:none;
+      z-index: 3; /* >>> cao hơn mưa chữ & tim bay */
+    }
+    @keyframes glow{
+      from{ text-shadow:0 0 5px #0ff, 0 0 10px #0ff }
+      to  { text-shadow:0 0 20px #0ff, 0 0 40px #0ff }
+    }
+
+    /* Mưa chữ & tim bay ở các lớp thấp hơn để không che chữ */
+    #rain{
+      position:absolute; inset:0;
+      pointer-events:none;
+      z-index: 0; /* thấp nhất */
+    }
+    #hearts{
+      position:absolute; inset:0;
+      pointer-events:none;
+      z-index: 1; /* trên mưa chữ, dưới count & wish */
+    }
+    .heart{
+      position:absolute; font-size:20px;
+      animation:fly 3s linear forwards;
+      will-change: transform, opacity;
+    }
+    @keyframes fly{
+      0%   { transform:translateY(0) scale(1);   opacity:1; }
+      100% { transform:translateY(-500px) scale(2); opacity:0; }
+    }
+  </style>
+</head>
+<body>
+  <section id="overlay" aria-label="Intro">
+    <div id="count">3</div>
+    <div id="wish">Happy Birthday Thanh Ngọc 💖
+      <br>
+      <p>18/06/2005</p>
+    </div>
+    <canvas id="rain"></canvas>
+    <div id="hearts"></div>
+  </section>
+
+  <script>
+    // Đếm 3 → 2 → 1 (không hiện 0) → hiện lời chúc → 3 giây sau chuyển sang Galaxy
+    let n = 3;
+    const count = document.getElementById('count');
+    const wish  = document.getElementById('wish');
+
+    const timer = setInterval(() => {
+      n--;
+      if (n > 0) {
+        count.textContent = n;
+        return;
+      }
+      clearInterval(timer);
+      count.style.display = 'none';
+      wish.style.display  = 'block';
+
+      // ⏱ Sau 3 giây chuyển sang trang Galaxy
+      setTimeout(() => {
+        // chọn 1 trong 2 dòng dưới tuỳ server:
+        // location.href = 'galaxy/';              // nếu server tự nhận index trong thư mục
+        location.href = 'galaxy/index.html';      // an toàn nhất, trỏ thẳng file
+      }, 3000);
+    }, 1000);
+
+    // ===== Mưa chữ (Matrix-style) =====
+    const canvas = document.getElementById('rain');
+    const ctx = canvas.getContext('2d');
+
+    function resize(){
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    const letters = 'HAPPYBIRTHDAY'.split('');
+    const fs = 16;
+    let cols = Math.floor(canvas.width / fs);
+    let drops = Array.from({ length: cols }, () => 1);
+
+    function draw(){
+      ctx.fillStyle = 'rgba(0,0,0,0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = '#ff66cc';
+      ctx.font = fs + 'px monospace';
+
+      for (let i = 0; i < drops.length; i++) {
+        const t = letters[Math.floor(Math.random() * letters.length)];
+        ctx.fillText(t, i * fs, drops[i] * fs);
+        if (drops[i] * fs > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+      }
+    }
+    const rainInterval = setInterval(draw, 33);
+    window.addEventListener('resize', () => {
+      cols = Math.floor(canvas.width / fs);
+      drops = Array.from({ length: cols }, () => 1);
+    });
+
+    // ===== Tim bay =====
+    const hearts = document.getElementById('hearts');
+    function createHeart(){
+      const h = document.createElement('div');
+      h.className = 'heart';
+      h.textContent = '❤️';
+      h.style.left = Math.random() * window.innerWidth + 'px';
+      h.style.bottom = '0px';
+      hearts.appendChild(h);
+      setTimeout(() => h.remove(), 3000);
+    }
+    const heartInterval = setInterval(createHeart, 500);
+
+    // (Tuỳ chọn) dọn dẹp interval khi rời trang
+    window.addEventListener('pagehide', () => {
+      clearInterval(rainInterval);
+      clearInterval(heartInterval);
+    });
+  </script>
+</body>
+</html>
